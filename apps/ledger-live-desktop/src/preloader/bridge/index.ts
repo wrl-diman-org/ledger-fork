@@ -6,6 +6,7 @@ import { transport } from "./transport";
 import { deeplink, updater } from "./push";
 import { app, files, power, store } from "./shell";
 import { shell, system } from "./system";
+import { zcash } from "./zcash";
 
 export function installBridge(): void {
   const bootstrap = ipcRenderer.sendSync(CHANNELS.bootstrap) as Bootstrap;
@@ -23,6 +24,7 @@ export function installBridge(): void {
     store,
     shell,
     system,
+    zcash,
   };
 
   // Not `ledger`: that is the renderer's E2E debug handle.

@@ -11,6 +11,7 @@ import type {
   StoreBridge,
   ShellBridge,
   SystemBridge,
+  ZcashBridge,
 } from "~/bridge/contract";
 
 // Test double for `~/renderer/bridge`, mapped in jest.config.js.
@@ -101,4 +102,9 @@ export const system: jest.Mocked<SystemBridge> = {
   clipboardReadText: jest.fn().mockResolvedValue(null),
   setVisualZoomLevelLimits: jest.fn(),
   getResourceUsage: jest.fn(() => undefined),
+};
+
+export const zcash: jest.Mocked<ZcashBridge> = {
+  invoke: jest.fn().mockResolvedValue(undefined),
+  subscribe: jest.fn((_channel: string, _callback: (payload: unknown) => void) => () => {}),
 };
