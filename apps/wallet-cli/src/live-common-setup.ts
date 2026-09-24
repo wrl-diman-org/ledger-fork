@@ -4,7 +4,6 @@ import { registerCoinModules } from "@ledgerhq/live-common/coin-modules/registry
 import type { CoinModuleLoader } from "@ledgerhq/live-common/coin-modules/types";
 import { setWalletAPIVersion } from "@ledgerhq/live-common/wallet-api/version";
 import { WALLET_API_VERSION } from "@ledgerhq/live-common/wallet-api/constants";
-import { setupStandaloneSwapQuotesStore } from "@ledgerhq/live-common/wallet-api/Exchange/quotes/state-manager/standaloneStore";
 import { LiveConfig } from "@ledgerhq/live-config/LiveConfig";
 import { setEnv, getEnv } from "@shared/env";
 import { bridgeEnvToNetworkState } from "@ledgerhq/live-common/network/setup";
@@ -29,7 +28,7 @@ if (!process.env.USER_ID) {
   process.env.USER_ID = "wallet-cli";
 }
 
-const ledgerClientVersion = `wallet-cli/${pkg.version}`;
+export const ledgerClientVersion = `wallet-cli/${pkg.version}`;
 setEnv("LEDGER_CLIENT_VERSION", ledgerClientVersion);
 process.env.LEDGER_CLIENT_VERSION = ledgerClientVersion;
 bridgeEnvToNetworkState();
@@ -126,10 +125,4 @@ setFrameworkCryptoAssetsStore(
     ledgerClientVersion,
   }),
 );
-// `getQuotes` needs a store dispatch; wallet-cli has no app Redux store.
-setupStandaloneSwapQuotesStore({
-  // Read on every request, so the debug settings can change it without a restart.
-  getSwapApiBaseUrl: () => getEnv("SWAP_API_BASE"),
-  ledgerClientVersion,
-});
 registerWalletCliDmkTransport();
