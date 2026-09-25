@@ -1,0 +1,99 @@
+import { waitFor } from "@testing-library/react-native";
+import { configureStore } from "@reduxjs/toolkit";
+import { setContentAbTestCopy } from "@features/platform-content-ab-tests";
+import reducers from "~/reducers";
+import type { AppStore } from "~/reducers";
+import { setAnalytics, setAnalyticsConsentInfo } from "~/actions/settings";
+import * as segment from "../segment";
+
+jest.unmock("../segment");
+jest.unmock("@shared/analytics");
+
+const { _trackMock: mockTrack } = require("@segment/analytics-react-native") as {
+  _trackMock: jest.Mock;
+};
+
+const remoteValue = (raw: string) => ({
+  asString: () => raw,
+  getSource: () => "remote" as const,
+});
+
+const makeStore = (): AppStore =>
+  configureStore({
+    reducer: reducers,
+    middleware: getDefaultMiddleware =>
+      getDefaultMiddleware({
+        serializableCheck: false,
+        immutableCheck: false,
+      }),
+  }) as AppStore;
+
+describe("segment ab_tests", () => {
+  let store: AppStore;
+
+  beforeEach(() => {
+    jest.useRealTimers();
+    jest.clearAllMocks();
+    setContentAbTestCopy({});
+    store = makeStore();
+    store.dispatch(
+      setAnalyticsConsentInfo({ consentDate: "2026-04-29T00:00:00.000Z", privacyPolicyVersion: 1 }),
+    );
+    store.dispatch(setAnalytics(true));
+  });
+
+  afterEach(() => {
+    jest.useFakeTimers();
+  });
+
+  const trackAndExpect = async (abTests: unknown) => {
+    await segment.start(store);
+    mockTrack.mockClear();
+
+    segment.track("TestEvent", {});
+
+    await waitFor(() =>
+      expect(mockTrack).toHaveBeenCalledWith(
+        "TestEvent",
+        expect.objectContaining({ ab_tests: abTests }),
+      ),
+    );
+  };
+
+  it("sends an empty ab_tests when no experiment is served", async () => {
+    await trackAndExpect({});
+  });
+
+  it("sends the full payload of each valid experiment", async () => {
+    setContentAbTestCopy({
+      feature_copy_upgrade_banner: remoteValue(
+        JSON.stringify({
+          enabled: true,
+          copy: { "upgrade.banner.title": "Discover Ledger Flex" },
+          trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+        }),
+      ),
+    });
+
+    await trackAndExpect({
+      upgradeBanner: {
+        enabled: true,
+        copy: { "upgrade.banner.title": "Discover Ledger Flex" },
+        trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+      },
+    });
+  });
+
+  it("leaves a malformed experiment out without dropping the event", async () => {
+    setContentAbTestCopy({
+      feature_copy_broken: remoteValue("not json"),
+      feature_copy_disabled: remoteValue(
+        JSON.stringify({ enabled: false, copy: { "upgrade.banner.title": "Hidden" } }),
+      ),
+    });
+
+    await trackAndExpect({
+      disabled: { enabled: false, copy: { "upgrade.banner.title": "Hidden" } },
+    });
+  });
+});

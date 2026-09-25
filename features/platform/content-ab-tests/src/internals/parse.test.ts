@@ -1,33 +1,47 @@
-import { parseContentAbTestCopy } from "./parse";
+import { enabledContentAbTestCopy, parseContentAbTests } from "./parse";
 
-describe("parseContentAbTestCopy", () => {
-  const value = (raw: string, source: "remote" | "default" | "static" = "remote") => ({
-    asString: () => raw,
-    getSource: () => source,
-  });
-  const experiment = (payload: object, source: "remote" | "default" | "static" = "remote") =>
-    value(JSON.stringify(payload), source);
+const value = (raw: string, source: "remote" | "default" | "static" = "remote") => ({
+  asString: () => raw,
+  getSource: () => source,
+});
+const experiment = (payload: object, source: "remote" | "default" | "static" = "remote") =>
+  value(JSON.stringify(payload), source);
 
-  it("collects copy from enabled feature_copy_ experiments", () => {
+describe("parseContentAbTests", () => {
+  it("keys experiments by in-app id and keeps the full payload", () => {
     expect(
-      parseContentAbTestCopy({
+      parseContentAbTests({
         feature_copy_upgrade_banner: experiment({
           enabled: true,
-          copy: {
-            "upgrade.banner.title": "Discover bigger screen devices",
-            "upgrade.banner.description": "Click to see more",
-          },
+          copy: { "upgrade.banner.title": "Discover Ledger Flex" },
+          trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
         }),
       }),
     ).toEqual({
-      "upgrade.banner.title": "Discover bigger screen devices",
-      "upgrade.banner.description": "Click to see more",
+      upgradeBanner: {
+        enabled: true,
+        copy: { "upgrade.banner.title": "Discover Ledger Flex" },
+        trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+      },
     });
   });
 
-  it("ignores translation keys defined outside copy", () => {
+  it("keeps disabled experiments", () => {
     expect(
-      parseContentAbTestCopy({
+      parseContentAbTests({
+        feature_copy_upgrade_banner: experiment({
+          enabled: false,
+          copy: { "upgrade.banner.title": "Hidden" },
+        }),
+      }),
+    ).toEqual({
+      upgradeBanner: { enabled: false, copy: { "upgrade.banner.title": "Hidden" } },
+    });
+  });
+
+  it("drops keys defined outside enabled, copy and trackingConfiguration", () => {
+    expect(
+      parseContentAbTests({
         feature_copy_upgrade_banner: experiment({
           enabled: true,
           copy: { "upgrade.banner.title": "From copy" },
@@ -35,13 +49,13 @@ describe("parseContentAbTestCopy", () => {
         }),
       }),
     ).toEqual({
-      "upgrade.banner.title": "From copy",
+      upgradeBanner: { enabled: true, copy: { "upgrade.banner.title": "From copy" } },
     });
   });
 
   it("ignores feature flags, config keys and non-remote values", () => {
     expect(
-      parseContentAbTestCopy({
+      parseContentAbTests({
         feature_counter_value: experiment({
           enabled: true,
           "some.key": "From a flag",
@@ -55,13 +69,9 @@ describe("parseContentAbTestCopy", () => {
     ).toEqual({});
   });
 
-  it("ignores disabled experiments and malformed payloads", () => {
+  it("skips malformed payloads and a broken trackingConfiguration", () => {
     expect(
-      parseContentAbTestCopy({
-        feature_copy_disabled: experiment({
-          enabled: false,
-          copy: { "disabled.key": "Hidden" },
-        }),
+      parseContentAbTests({
         feature_copy_broken: value("not json"),
         feature_copy_invalid: experiment({
           enabled: "yes",
@@ -69,7 +79,32 @@ describe("parseContentAbTestCopy", () => {
         }),
         feature_copy_untyped: experiment({ enabled: true, copy: { "untyped.key": 42 } }),
         feature_copy_missing: experiment({ enabled: true }),
+        feature_copy_bad_tracking: experiment({
+          enabled: true,
+          copy: { "tracking.key": "Nope" },
+          trackingConfiguration: { ptxEventProperty: "", ptxEventValue: "variant_b" },
+        }),
       }),
     ).toEqual({});
+  });
+});
+
+describe("enabledContentAbTestCopy", () => {
+  it("merges the copy of enabled experiments only", () => {
+    expect(
+      enabledContentAbTestCopy({
+        upgradeBanner: {
+          enabled: true,
+          copy: {
+            "upgrade.banner.title": "Discover bigger screen devices",
+            "upgrade.banner.description": "Click to see more",
+          },
+        },
+        hiddenBanner: { enabled: false, copy: { "hidden.key": "Hidden" } },
+      }),
+    ).toEqual({
+      "upgrade.banner.title": "Discover bigger screen devices",
+      "upgrade.banner.description": "Click to see more",
+    });
   });
 });

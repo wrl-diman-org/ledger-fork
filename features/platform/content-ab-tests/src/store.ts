@@ -1,13 +1,20 @@
 import type { RemoteConfigValue } from "@features/platform-feature-flags/firebase";
-import { parseContentAbTestCopy } from "./internals/parse";
+import {
+  enabledContentAbTestCopy,
+  parseContentAbTests,
+  type ContentAbTestCopy,
+  type ContentAbTests,
+} from "./internals/parse";
 
-export type ContentAbTestCopy = Readonly<Record<string, string>>;
+export type { ContentAbTestCopy, ContentAbTestPayload, ContentAbTests } from "./internals/parse";
 
 type Subscriber = (copy: ContentAbTestCopy) => void;
 
 const EMPTY_COPY: ContentAbTestCopy = Object.freeze({});
+const EMPTY_EXPERIMENTS: ContentAbTests = Object.freeze({});
 const ENGLISH_LANGUAGE = "en";
 
+let experiments: ContentAbTests = EMPTY_EXPERIMENTS;
 let copy: ContentAbTestCopy = EMPTY_COPY;
 const subscribers = new Set<Subscriber>();
 
@@ -28,6 +35,11 @@ export function getContentAbTestCopy(): ContentAbTestCopy {
   return copy;
 }
 
+/** Every valid experiment, enabled or not, with its full payload. Sent as `ab_tests`. */
+export function getContentAbTests(): ContentAbTests {
+  return experiments;
+}
+
 export function subscribeToContentAbTestCopy(callback: Subscriber): () => void {
   subscribers.add(callback);
   return () => {
@@ -40,10 +52,12 @@ export function subscribeToContentAbTestCopy(callback: Subscriber): () => void {
  * with the `getAll()` result the flag fetch already produced, so copy costs no extra network
  * round-trip and cannot delay boot on its own.
  *
- * A missing, disabled or malformed experiment leaves the English baseline as the runtime copy.
+ * Applied copy is the `copy` of enabled experiments. A disabled experiment stays in
+ * `getContentAbTests` but leaves the English baseline in place; a malformed one is dropped from both.
  */
 export function setContentAbTestCopy(all: Record<string, RemoteConfigValue>): ContentAbTestCopy {
-  const next = parseContentAbTestCopy(all);
+  experiments = parseContentAbTests(all);
+  const next = enabledContentAbTestCopy(experiments);
   if (isSameCopy(copy, next)) return copy;
   copy = next;
   subscribers.forEach(callback => callback(copy));

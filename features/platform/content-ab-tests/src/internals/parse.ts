@@ -1,22 +1,27 @@
+import type { z } from "zod";
 import type { RemoteConfigValue } from "@features/platform-feature-flags/firebase";
-import { EnabledContentAbTestCopySchema } from "./schema";
+import { ContentAbTestPayloadSchema } from "./schema";
 
 const FIREBASE_COPY_PREFIX = "feature_copy_";
 
-type ContentAbTestCopy = Readonly<Record<string, string>>;
+export type ContentAbTestCopy = Readonly<Record<string, string>>;
+export type ContentAbTestPayload = z.infer<typeof ContentAbTestPayloadSchema>;
+export type ContentAbTests = Readonly<Record<string, ContentAbTestPayload>>;
 
 /**
- * Reads enabled `feature_copy_*` experiments from a Remote Config `getAll()` payload.
+ * Reads valid `feature_copy_*` experiments from a Remote Config `getAll()` payload, keyed by
+ * in-app id (`feature_copy_upgrade_banner` becomes `upgradeBanner`).
  *
- * These keys match no feature-flag id, so the flag parser ignores them. Only string entries
- * inside `copy` are returned. A missing, disabled or malformed payload is skipped, and
- * translation keys placed beside `copy` are ignored.
+ * These keys match no feature-flag id, so the flag parser ignores them. Disabled experiments are
+ * kept. A malformed payload, including a broken `trackingConfiguration`, is skipped, and keys
+ * placed beside `enabled`, `copy` and `trackingConfiguration` are dropped.
  */
-export function parseContentAbTestCopy(all: Record<string, RemoteConfigValue>): ContentAbTestCopy {
-  const parsed: Record<string, string> = {};
+export function parseContentAbTests(all: Record<string, RemoteConfigValue>): ContentAbTests {
+  const parsed: Record<string, ContentAbTestPayload> = {};
   for (const [key, value] of Object.entries(all)) {
     if (value.getSource() !== "remote") continue;
-    if (!key.toLowerCase().startsWith(FIREBASE_COPY_PREFIX)) continue;
+    const id = firebaseKeyToContentAbTestId(key);
+    if (!id) continue;
 
     let payload: unknown;
     try {
@@ -24,9 +29,26 @@ export function parseContentAbTestCopy(all: Record<string, RemoteConfigValue>): 
     } catch {
       continue;
     }
-    const experiment = EnabledContentAbTestCopySchema.safeParse(payload);
-    if (!experiment.success) continue;
-    Object.assign(parsed, experiment.data.copy);
+    const experiment = ContentAbTestPayloadSchema.safeParse(payload);
+    if (experiment.success) parsed[id] = experiment.data;
   }
   return Object.freeze(parsed);
+}
+
+/** Merges the `copy` of enabled experiments. Disabled experiments never override copy. */
+export function enabledContentAbTestCopy(experiments: ContentAbTests): ContentAbTestCopy {
+  const merged: Record<string, string> = {};
+  for (const experiment of Object.values(experiments)) {
+    if (experiment.enabled) Object.assign(merged, experiment.copy);
+  }
+  return Object.freeze(merged);
+}
+
+function firebaseKeyToContentAbTestId(key: string): string | null {
+  const lower = key.toLowerCase();
+  if (!lower.startsWith(FIREBASE_COPY_PREFIX)) return null;
+  const id = lower
+    .slice(FIREBASE_COPY_PREFIX.length)
+    .replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
+  return id.length > 0 ? id : null;
 }

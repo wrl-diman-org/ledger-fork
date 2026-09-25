@@ -1,7 +1,13 @@
 import { z } from "zod";
 
-/** Schema that validates an enabled `feature_copy_*` Remote Config experiment. */
-export const EnabledContentAbTestCopySchema = z.object({
-  enabled: z.literal(true),
+const ContentAbTestTrackingConfigurationSchema = z.object({
+  ptxEventProperty: z.string().min(1),
+  ptxEventValue: z.string().min(1),
+});
+
+/** Schema that validates a `feature_copy_*` Remote Config experiment, enabled or not. */
+export const ContentAbTestPayloadSchema = z.object({
+  enabled: z.boolean(),
   copy: z.record(z.string(), z.string()),
+  trackingConfiguration: ContentAbTestTrackingConfigurationSchema.optional(),
 });
