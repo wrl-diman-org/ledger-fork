@@ -186,8 +186,8 @@ export function runBrowseAndSearchContactsTest(tmsLinks: string[], tags: string[
   });
 }
 
-// Rename returns the device to the dashboard and ends this Speculos session.
-// Covered by renameContactIntent unit tests.
+// On-device rename leaves the Ethereum app for the dashboard, which ends this session.
+// That path is contacts.rename.spec.ts, on the mock server.
 export function runCreateDeleteContactWithAddressesTest(tmsLinks: string[], tags: string[]) {
   describeIfContactsDeviceSupported("Contacts", () => {
     setupLedgerSyncSeed();

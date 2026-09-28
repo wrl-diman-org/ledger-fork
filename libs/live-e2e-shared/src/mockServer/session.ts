@@ -2,6 +2,7 @@ import { DmkNetworkClient } from "@ledgerhq/device-management-kit";
 import {
   MockClient,
   type Device,
+  type DeviceConfig,
   type MockConfig,
   type SpeculosButton,
 } from "@ledgerhq/device-mockserver-client";
@@ -53,6 +54,23 @@ const timeoutAfter =
   (timeoutMs: number): typeof fetch =>
   (input: string | URL | Request, init?: RequestInit) =>
     fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(timeoutMs) });
+
+/** Creates a session and imports `devices`. The caller owns the token and passes it to the app. */
+export async function provisionMockServerSession(
+  devices: DeviceConfig[],
+): Promise<{ baseUrl: string; token: string }> {
+  await assertMockServerReachable();
+  const baseUrl = mockServerBaseUrl();
+  const client = new MockClient(baseUrl);
+  const token = await client.authenticate();
+  await client.importSession({ devices });
+  return { baseUrl, token };
+}
+
+export async function disposeMockServerSession(baseUrl: string, token: string): Promise<void> {
+  const client = new MockClient(baseUrl, { token });
+  await client.disposeSession();
+}
 
 export async function assertMockServerReachable(): Promise<void> {
   const baseUrl = mockServerBaseUrl();
