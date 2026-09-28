@@ -146,7 +146,7 @@ const config = {
   testPathIgnorePatterns: ["\\.skip\\.spec\\.ts$"],
   testTimeout: 60_000 * 6,
   reporters: [
-    "detox/runners/jest/reporter",
+    "<rootDir>/jest.reporter.js",
     ["jest-allure2-reporter", jestAllure2ReporterOptions],
     ...(process.env.CI ? [["github-actions", { silent: false }]] : []),
   ],
