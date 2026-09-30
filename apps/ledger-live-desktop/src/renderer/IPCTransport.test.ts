@@ -24,8 +24,6 @@ jest.mock("@ledgerhq/devices", () => {
   };
 });
 
-// Asserting against named bridge methods rather than channel strings, so renaming a channel
-// can no longer leave a test passing against a call that no longer happens.
 const mockTransport = jest.mocked(transportBridge);
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -55,8 +53,6 @@ describe("IPCTransport", () => {
 
       expect(mockTransport.listen).toHaveBeenCalledWith(expect.stringMatching(UUID_V4));
 
-      // Let the promise chain inside listen() settle. Asserting after the await, rather than
-      // inside the callback, makes a mismatch fail the test instead of timing it out.
       await new Promise(resolve => setImmediate(resolve));
 
       expect(observer.error).not.toHaveBeenCalled();

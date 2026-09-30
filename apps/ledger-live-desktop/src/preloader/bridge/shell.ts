@@ -8,12 +8,10 @@ import {
   type StoreBridge,
 } from "~/bridge/contract";
 
-/** Application lifecycle and window control. */
 export const app: AppBridge = {
   reload: () => ipcRenderer.send(CHANNELS.appReload),
   relaunch: () => ipcRenderer.send(CHANNELS.appRelaunch),
   quit: () => ipcRenderer.send(CHANNELS.appQuit),
-  // Main's handler takes an (unused) payload argument; kept for wire compatibility.
   show: () => ipcRenderer.send(CHANNELS.showApp, {}),
 };
 

@@ -14,17 +14,11 @@ import BigNumber from "bignumber.js";
 const BIG_NUMBER_DECIMAL_PLACES = 40;
 
 type PlatformInfo = {
-  /** e.g. "darwin", "win32", "linux" */
   platformOS: string;
-  /** Kernel/OS release string. */
   platformVersion: string;
 };
 
-/**
- * Shared live-common bootstrap, run once per process. Imported by both main and the
- * renderer, which is why the platform details are passed in rather than read here — keeping
- * `os` out of this file is what lets the renderer drop Node entirely.
- */
+/** Shared with the renderer, so platform details are passed in rather than read from `os`. */
 export function setupBase({ platformOS, platformVersion }: PlatformInfo) {
   // The domain registry is the runtime source of truth for currency data.
   setCurrenciesResolver({

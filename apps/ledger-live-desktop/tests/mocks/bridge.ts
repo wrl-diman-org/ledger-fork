@@ -13,10 +13,7 @@ import type {
   SystemBridge,
 } from "~/bridge/contract";
 
-/**
- * Test double for `~/renderer/bridge`, which reads `window.lld` — provided only by the
- * preload. Mapped in jest.config.js, so test files need not know what sits behind it.
- */
+// Test double for `~/renderer/bridge`, mapped in jest.config.js.
 export const bootstrap: Bootstrap = {
   version: 1,
   env: { ...process.env },
@@ -47,7 +44,7 @@ export const db: jest.Mocked<DbBridge> = {
   cleanCache: jest.fn().mockResolvedValue(undefined),
 };
 
-// Every method resolves: callers chain `.catch()`, so a bare `undefined` would throw.
+// Must resolve: callers chain `.catch()`.
 export const transport: jest.Mocked<TransportBridge> = {
   open: jest.fn().mockResolvedValue(undefined),
   exchange: jest.fn().mockResolvedValue(undefined),
@@ -56,7 +53,7 @@ export const transport: jest.Mocked<TransportBridge> = {
   listenUnsubscribe: jest.fn().mockResolvedValue(undefined),
 };
 
-// `on*` doubles must return a closure: consumers call the result on unmount.
+// `on*` must return an unsubscribe closure.
 export const updater: jest.Mocked<UpdaterBridge> = {
   init: jest.fn(),
   quitAndInstall: jest.fn(),

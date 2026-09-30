@@ -130,7 +130,6 @@ const warnOnConfigMismatch = async () => {
   envs.forEach(async (env: string) => {
     let apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId, envVars;
     try {
-      // Read in the main process: the renderer has no filesystem access.
       const fileContent: string | null = await files.readDotEnvFile(env);
       if (!fileContent) throw new Error(`no dotenv file for ${env}`);
       envVars = parseEnvFile(fileContent);

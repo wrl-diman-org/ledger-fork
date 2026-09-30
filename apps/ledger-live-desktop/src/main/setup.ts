@@ -11,7 +11,6 @@ import { InMemoryLogger } from "./logger";
 import { openURL } from "./openURL";
 import type { SaveOutcome, SaveRequest } from "~/bridge/contract";
 
-// The renderer seeds its own env independently; no IPC channel keeps the two in sync.
 for (const k in process.env) {
   setEnvUnsafe(k, process.env[k]);
 }
@@ -20,11 +19,7 @@ ipcMain.on("updater", (e, type) => {
   updater(type);
 });
 
-/**
- * Runs the save dialog and keeps the path, so the renderer never learns one. It used to
- * receive the path and hand it back, which made every write handler an arbitrary-file-write
- * primitive. `e2ePath` bypasses the dialog only when PLAYWRIGHT_RUN is set in this process.
- */
+// Main owns the path, so the renderer cannot turn a write handler into an arbitrary file write.
 async function resolveSaveTarget({ options, e2ePath }: SaveRequest): Promise<string | null> {
   if (e2ePath && getEnv("PLAYWRIGHT_RUN")) return e2ePath;
   const { canceled, filePath } = await dialog.showSaveDialog(options);
@@ -39,8 +34,6 @@ ipcMain.handle(
 
     const internalLogsChronological = InMemoryLogger.getLogger().getLogs().reverse();
 
-    // Pre-stringified by the caller: passing the array itself hits Electron's serialiser,
-    // which cannot carry the circular references the in-memory logs contain.
     let rendererLogsChronological: Array<{ timestamp: string }> = [];
     try {
       rendererLogsChronological = JSON.parse(rendererLogsStr).reverse();
@@ -63,24 +56,14 @@ ipcMain.handle(
 
 ipcMain.handle("openUserDataDirectory", () => shell.openPath(app.getPath("userData")));
 
-// `openURL` validates the scheme, so a compromised renderer cannot use this to launch
-// arbitrary protocol handlers.
+// openURL validates the scheme; do not swap it for shell.openExternal.
 ipcMain.on("shell:open-external", (_event, url: string) => openURL(url));
 
-/**
- * Clipboard access on the renderer's behalf, rather than `navigator.clipboard`: the window's
- * permission handler grants only `hid`, so a clipboard-read from the renderer is denied —
- * and widening that policy would give back part of what this migration removes.
- */
+// Not navigator.clipboard: the permission handler grants the renderer only `hid`.
 ipcMain.on("clipboard:write-text", (_event, text: string) => clipboard.writeText(text));
 
 ipcMain.handle("clipboard:read-text", () => clipboard.readText());
 
-/**
- * Dev-only, for the renderer's config-mismatch diagnostic. The environment name is checked
- * against a fixed list rather than interpolated into the path, so a compromised renderer
- * cannot use this to read arbitrary files.
- */
 const DOTENV_ENVIRONMENTS = new Set(["production", "staging", "testing", "development"]);
 
 ipcMain.handle("read-dotenv-file", async (_event, environment: string) => {
@@ -92,10 +75,6 @@ ipcMain.handle("read-dotenv-file", async (_event, environment: string) => {
   }
 });
 
-/**
- * Local Live App manifests (Developer settings). The dialog and the file I/O happen together
- * here, so the renderer only ever sees file contents, never a path it could reuse.
- */
 ipcMain.handle("read-local-manifest", async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ["openFile"] });
   if (canceled || !filePaths.length) return null;

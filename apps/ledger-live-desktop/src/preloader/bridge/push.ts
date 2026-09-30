@@ -7,13 +7,7 @@ import {
   type Unsubscribe,
 } from "~/bridge/contract";
 
-/**
- * Subscribes to a main-process push channel, dropping the `IpcRendererEvent`: it carries a
- * `sender` — a privileged `WebContents` — which would either fail the bridge's conversion or
- * arrive as a mangled shell of a privileged object.
- *
- * Cancellation returns a closure rather than taking the listener back; see `Unsubscribe`.
- */
+// Drops the event: its `sender` is a privileged WebContents that must not cross the bridge.
 function subscribe<T>(channel: string, callback: (payload: T) => void): Unsubscribe {
   const listener = (_event: IpcRendererEvent, payload: T) => callback(payload);
   ipcRenderer.on(channel, listener);

@@ -1,10 +1,6 @@
 import { ipcRenderer } from "electron";
 import { CHANNELS, type DbBridge, type Serializable } from "~/bridge/contract";
 
-/**
- * The main-side handlers take a single object argument; that shape is preserved here so
- * `src/main/**` needs no changes while call sites get ordinary named arguments.
- */
 export const db: DbBridge = {
   getKey: (ns: string, keyPath: string, defaultValue?: unknown) =>
     ipcRenderer.invoke(CHANNELS.getKey, { ns, keyPath, defaultValue }),

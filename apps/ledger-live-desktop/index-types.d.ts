@@ -62,8 +62,7 @@ declare namespace Electron {
 }
 
 interface Window {
-  // Consume via `~/renderer/bridge`, never directly, so the version check runs. Named
-  // `lld` because `window.ledger` is already the E2E debug handle (see below).
+  // Read through `~/renderer/bridge`, which checks the version.
   lld: import("./src/bridge/contract").LedgerBridge;
 
   // Electron's nodeIntegration provides require on window

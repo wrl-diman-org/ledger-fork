@@ -65,8 +65,6 @@ describe("renderer logger", () => {
     });
 
     it("should stamp every entry with an ISO timestamp", () => {
-      // The main process types renderer logs as `Array<{ timestamp: string }>` and merges
-      // them with its own by that field, so this format is a cross-process contract.
       logger.debug("hello");
       expect(memoryLogger.getMemoryLogs()[0].timestamp).toMatch(ISO_8601);
     });
@@ -81,9 +79,6 @@ describe("renderer logger", () => {
     });
 
     it("should keep an object message's own keys at the top level (winston's 2-arg form)", () => {
-      // The `listenLogs` firehose in live-common-setup.ts logs this shape. init.tsx's VERBOSE
-      // filter and src/main/mergeAllLogs.ts both read `type` off the top level, so collapsing
-      // the object into `message` silently kills both.
       logger.debug({ type: "apdu", message: "=> e0d2000000", data: { apdu: "e0d2" } });
       expect(memoryLogger.getMemoryLogs()[0]).toMatchObject({
         level: "debug",
@@ -99,8 +94,6 @@ describe("renderer logger", () => {
     });
 
     it("should extract message and stack from an Error", () => {
-      // An Error's `message` and `stack` are non-enumerable, so both JSON.stringify and a
-      // spread yield "{}" — the error's detail has to be pulled out explicitly.
       logger.error(new Error("boom"));
       const entry = memoryLogger.getMemoryLogs()[0];
       expect(entry).toMatchObject({ level: "error", message: "boom" });

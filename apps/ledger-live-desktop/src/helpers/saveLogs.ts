@@ -36,9 +36,7 @@ export function getJSONStringifyReplacer(): (key: string, value: unknown) => unk
 
 export const saveLogs = async (request: SaveRequest) => {
   try {
-    // Stringified here, not by Electron's IPC serialiser, which cannot carry the circular
-    // references the in-memory logs contain — getJSONStringifyReplacer turns them into
-    // "[Circular]".
+    // Stringified here: Electron's IPC serialiser cannot carry the logs' circular references.
     const memoryLogsStr = JSON.stringify(
       memoryLogger.getMemoryLogs(),
       getJSONStringifyReplacer(),

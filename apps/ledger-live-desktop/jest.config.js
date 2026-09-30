@@ -39,8 +39,7 @@ const moduleNameMapper = {
   ".*\\.lottie$": "<rootDir>/fileMock.js",
   "^@ledgerhq/ledger-key-ring-protocol/__mocks__/(.*)$":
     "<rootDir>/../../libs/ledger-key-ring-protocol/src/__mocks__/$1",
-  // Must precede every "~/*" rule, including those generated from tsconfig paths:
-  // moduleNameMapper is applied in insertion order.
+  // Must precede the "~/*" rules: moduleNameMapper applies in insertion order.
   "^~/renderer/bridge$": "<rootDir>/tests/mocks/bridge.ts",
   ...pathsToModuleNameMapper(compilerOptions.paths),
   "~/(.*)": "<rootDir>/src/$1",

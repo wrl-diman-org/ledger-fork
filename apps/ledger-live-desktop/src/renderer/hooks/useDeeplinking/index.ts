@@ -34,8 +34,6 @@ function useDeeplink() {
   );
 
   useEffect(() => {
-    // onOpen returns its own unsubscribe: the listener cannot be passed back across the
-    // bridge to be removed by identity.
     return deeplink.onOpen(handleBackgroundDeeplink);
   }, [handleBackgroundDeeplink]);
 

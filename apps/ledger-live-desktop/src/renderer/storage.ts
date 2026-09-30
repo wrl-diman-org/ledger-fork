@@ -139,8 +139,6 @@ export const getKey = async <
   keyPath: K,
   defaultValue?: DV,
 ): Promise<V> => {
-  // The bridge returns `unknown`, not `any`. This module owns the transform table, so it is
-  // the deliberate place to reassert the type.
   let data: unknown = await db.getKey(ns, keyPath, defaultValue);
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const transform = transforms[keyPath as keyof Transforms];

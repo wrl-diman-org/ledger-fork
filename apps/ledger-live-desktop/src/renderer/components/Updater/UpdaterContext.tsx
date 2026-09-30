@@ -56,11 +56,9 @@ class Provider extends Component<UpdaterProviderProps, UpdaterProviderState> {
     this.unsubscribe?.();
   }
 
-  /** Returned by `onStatus`; the listener itself cannot be passed back across the bridge. */
   private unsubscribe?: () => void;
 
-  // The bridge types `status` as a plain string, because the contract cannot import
-  // renderer types. Narrowing back to UpdateStatus happens here.
+  // The contract cannot import renderer types, so `status` is narrowed here.
   listener = (event: UpdaterStatusEvent) => {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const args = event as {

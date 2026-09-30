@@ -1,10 +1,6 @@
 import { bootstrap } from "~/renderer/bridge";
 
-/**
- * Paths scrubbed out of telemetry. Read from the bootstrap snapshot so they are set from the
- * first log line: `filepathReplace` blanks its input entirely while they are unset, so the
- * previous async IPC lookup meant early errors were reported with no path information.
- */
+// Set from the first log line: filepathReplace blanks its input while these are empty.
 const configDir = bootstrap.env.LEDGER_CONFIG_DIRECTORY || bootstrap.paths.userData;
 const homeDir = bootstrap.env.HOME_DIRECTORY || bootstrap.paths.home;
 

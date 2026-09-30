@@ -19,9 +19,6 @@ const LOG_TYPE = "hid-ipc";
  * Only used for Speculos and HTTP proxy transports
  */
 export default class IPCTransport extends Transport {
-  // Was `typeof ipcRenderer === "object"`, always true in a renderer. Kept equivalent
-  // rather than narrowed to "a Speculos port or device proxy is configured", which would be
-  // a behavioural change.
   static isSupported = (): Promise<boolean> => Promise.resolve(true);
 
   static list = (): Promise<unknown[]> => Promise.resolve([]);

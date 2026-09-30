@@ -1,13 +1,6 @@
 import * as datadog from "~/datadog/renderer";
 
-/**
- * Minimal in-house logger, replacing winston — whose file/http/stream transports dragged in
- * `fs`, `os`, `path`, `zlib`, `http`, `https` and `string_decoder`.
- *
- * The emitted shape matches winston's `combine(timestamp(), json())`. `timestamp` must stay
- * an ISO 8601 string: main types renderer logs as `Array<{ timestamp: string }>` and
- * interleaves them with its own by that field (src/main/mergeAllLogs.ts).
- */
+// Same shape as winston's combine(timestamp(), json()): mergeAllLogs sorts by the ISO timestamp.
 export type LogEntry = {
   level: string;
   message?: string;
@@ -68,9 +61,7 @@ const logger = {
       return;
     }
 
-    // An object message *is* the entry, so its keys stay at the top level. Stringifying it
-    // into `message` instead drops `type`, which both the VERBOSE console filter
-    // (~/renderer/init) and the exported-log merge (src/main/mergeAllLogs.ts) read.
+    // An object message is the entry: `type` must stay top-level for the VERBOSE filter.
     if (meta.length === 0 && isPlainObject(message)) {
       const entry: Record<string, unknown> = { ...message, level: levelOrEntry };
       if (message instanceof Error) {

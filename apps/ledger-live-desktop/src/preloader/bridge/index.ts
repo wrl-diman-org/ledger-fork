@@ -7,16 +7,11 @@ import { deeplink, updater } from "./push";
 import { app, files, power, store } from "./shell";
 import { shell, system } from "./system";
 
-/**
- * Assembles and publishes the bridge. The preload is fully executed before the renderer
- * bundle, which is what lets renderer modules read bootstrap values at module scope.
- */
 export function installBridge(): void {
   const bootstrap = ipcRenderer.sendSync(CHANNELS.bootstrap) as Bootstrap;
 
   const bridge: LedgerBridge = {
     version: 1,
-    // Frozen: it is a snapshot of main's state. Consumers that mutate must take a copy.
     bootstrap: Object.freeze(bootstrap),
     db,
     transport,
@@ -30,7 +25,6 @@ export function installBridge(): void {
     system,
   };
 
-  // `lld`, not `ledger`: the renderer already installs a `window.ledger` debug handle for
-  // the E2E suites.
+  // Not `ledger`: that is the renderer's E2E debug handle.
   expose("lld", bridge);
 }

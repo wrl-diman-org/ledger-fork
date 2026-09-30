@@ -235,11 +235,8 @@ window.saveLogs = async (path: string): Promise<void> => {
   const memoryLogs = memoryLogger.getMemoryLogs();
 
   try {
-    // Stringified here, not by Electron's IPC serialiser, which cannot carry the circular
-    // references the in-memory logs contain.
+    // Stringified here: Electron's IPC serialiser cannot carry the logs' circular references.
     const memoryLogsStr = JSON.stringify(memoryLogs, getJSONStringifyReplacer(), 2);
-    // `path` is written straight through only under PLAYWRIGHT_RUN; otherwise main opens
-    // the save dialog pre-filled with it.
     await files.saveLogs({ options: { defaultPath: path }, e2ePath: path }, memoryLogsStr);
   } catch (error) {
     console.warn("Failed to save logs:", error);

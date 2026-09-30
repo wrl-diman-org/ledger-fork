@@ -1,11 +1,5 @@
 import type { LedgerBridge } from "~/bridge/contract";
 
-/**
- * Renderer-side entry point to everything the preload exposes.
- *
- * Every consumer goes through this module rather than touching `window.lld` directly, so the
- * version check happens once and tests can substitute the whole bridge by aliasing one path.
- */
 const bridge = (globalThis as unknown as { lld?: LedgerBridge }).lld;
 
 if (!bridge) {
@@ -15,8 +9,7 @@ if (!bridge) {
 }
 
 if (bridge.version !== 1) {
-  // The two bundles are emitted into the same directory, which is not cleaned between
-  // builds, so a stale preload against a fresh renderer is reachable locally.
+  // Reachable locally: .webpack is not cleaned between builds.
   throw new Error(
     `Preload/renderer version mismatch: bridge is v${bridge.version}, renderer expects v1. Rebuild the app.`,
   );

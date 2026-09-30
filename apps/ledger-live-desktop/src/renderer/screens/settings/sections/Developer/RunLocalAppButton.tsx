@@ -33,8 +33,6 @@ const RunLocalAppButton = () => {
       const { id, name } = manifest;
       const exportedManifest = localLiveApps.find((m: LiveAppManifest) => m.id === id);
       const manifestData = JSON.stringify(exportedManifest, null, 2);
-      // Main runs the save dialog and the write together, so no filesystem path is
-      // handed back to the renderer.
       writeLocalManifest(`${name}-manifest.json`, manifestData).catch(console.warn);
     },
     [localLiveApps],

@@ -4,8 +4,6 @@ import useDeeplink from "..";
 
 const mockHandler = jest.fn();
 
-// The bridge delivers just the url — the preload strips the IpcRendererEvent — and hands
-// back an unsubscribe closure rather than accepting the listener for removal.
 let emitDeepLink: ((url: string) => void) | undefined;
 
 jest.mock("../useDeepLinkHandler", () => ({
@@ -18,7 +16,6 @@ describe("useDeeplink", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     emitDeepLink = undefined;
-    // Re-established after clearAllMocks, which drops implementations.
     jest.mocked(deeplink.onOpen).mockImplementation(callback => {
       emitDeepLink = callback;
       return () => {

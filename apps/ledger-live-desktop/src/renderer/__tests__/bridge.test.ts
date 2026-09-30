@@ -1,7 +1,6 @@
 import type { LedgerBridge } from "~/bridge/contract";
 
-// Relative path on purpose: jest maps "~/renderer/bridge" to a test double, and these cases
-// exercise the real module's guards.
+// Relative: jest maps "~/renderer/bridge" to a test double.
 const BRIDGE_MODULE = "../bridge";
 
 const validBridge = (overrides: Partial<LedgerBridge> = {}) =>

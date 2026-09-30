@@ -39,8 +39,7 @@ export function useOpenPostOnboardingCallback() {
         isRecoverDisplayed(recoverServices, deviceModelId) &&
         !!upsellPath &&
         hasRecoverInProgressState(protectId);
-      // `setImmediate` is a Node global the sandboxed renderer no longer has. A macrotask,
-      // not `queueMicrotask`: the redirect must land after the caller's render has committed.
+      // A macrotask, so the redirect lands after the caller's render commits.
       setTimeout(() => {
         handleStartPostOnboarding({
           deviceModelId,

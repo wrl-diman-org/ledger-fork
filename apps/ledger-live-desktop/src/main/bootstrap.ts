@@ -7,10 +7,8 @@ import { getDistributionChannel } from "~/helpers/distributionChannel";
 let store: Store | undefined;
 
 /**
- * Deliberately not constructed at module scope: `src/main/index.ts` imports this before it
- * calls `setUserDataPath()`, so an eager `new Store()` would resolve `userData` to the
- * default Electron location and silently create a second, empty store — losing the user's
- * Recover subscription state.
+ * Lazy: index.ts imports this before setUserDataPath(), so an eager store would open in the
+ * default userData and silently start empty.
  */
 function getStore(): Store {
   if (!store) {
@@ -38,15 +36,10 @@ export function buildBootstrap(): Bootstrap {
   };
 }
 
-// `sendSync`, because the renderer reads these at module-evaluation time. Not an extra
-// blocking round trip on balance: it replaces the one `electron-store` used to make from
-// the renderer.
 ipcMain.on(CHANNELS.bootstrap, event => {
   event.returnValue = buildBootstrap();
 });
 
-// Fire-and-forget: the renderer updates its own copy at the same time, so it never waits
-// for the disk.
 ipcMain.on(CHANNELS.storeSet, (_event, key: string, value: unknown) => {
   getStore().set(key, value);
 });

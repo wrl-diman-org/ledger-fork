@@ -203,8 +203,6 @@ async function init() {
     deepLinkUrl = process.env.LEDGER_LIVE_DEEPLINK;
     store.dispatch(setDeepLinkUrl(deepLinkUrl));
   }
-  // Once-only: the bridge exposes a persistent subscription, so cancel it on first
-  // delivery rather than relying on a once-only listener.
   const stopInitialDeepLinkListener = deeplink.onOpen((url: string) => {
     stopInitialDeepLinkListener();
     store.dispatch(setDeepLinkUrl(url));
