@@ -10,11 +10,13 @@ import {
   hasBeenUpsoldRecoverSelector,
 } from "~/renderer/reducers/settings";
 import useFinishOnboardingDialog from "LLD/features/FinishOnboarding/FinishOnboardingDialog/hooks/useFinishOnboardingDialog";
+import { pendingAddAccountResumeSelector } from "~/renderer/reducers/onboarding";
 
 export function useNavigateToPostOnboardingHubCallback() {
   const navigate = useNavigate();
   const hasBeenRedirectedToPostOnboarding = useSelector(hasBeenRedirectedToPostOnboardingSelector);
   const hasBeenUpsoldRecover = useSelector(hasBeenUpsoldRecoverSelector);
+  const pendingAddAccountResume = useSelector(pendingAddAccountResumeSelector);
   const onboardingWidgetFeature = useFeature("onboardingWidget");
   const shouldDisplayFinishOnboardingWidget = onboardingWidgetFeature?.enabled ?? false;
   const { handleOpen: openFinishOnboardingDialog } = useFinishOnboardingDialog();
@@ -37,9 +39,10 @@ export function useNavigateToPostOnboardingHubCallback() {
             replace,
           });
         } else {
-          navigate("/", { replace: true });
+          navigate(pendingAddAccountResume?.returnTo ?? "/", { replace: true });
         }
-        if (!hasBeenRedirectedToPostOnboarding) {
+        // An Add Account flow waits to resume where it started: don't open Wallet setup over it.
+        if (!hasBeenRedirectedToPostOnboarding && !pendingAddAccountResume) {
           openFinishOnboardingDialog();
         }
         return;
@@ -54,6 +57,7 @@ export function useNavigateToPostOnboardingHubCallback() {
       openFinishOnboardingDialog,
       protectId,
       recoverServices,
+      pendingAddAccountResume,
       shouldDisplayFinishOnboardingWidget,
       upsellPath,
     ],

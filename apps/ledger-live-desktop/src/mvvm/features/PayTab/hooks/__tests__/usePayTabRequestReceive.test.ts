@@ -1,6 +1,8 @@
 import type { Account, AccountLike } from "@ledgerhq/types-live";
 import { AssetCategory } from "@domain/api-aggregated-assets";
 import { act, renderHook } from "tests/testSetup";
+import { AFTER_ONBOARDING_STATE } from "~/renderer/reducers/settings";
+import { shouldResumeAddAccountAfterOnboardingSelector } from "~/renderer/reducers/onboarding";
 import { useOpenAssetAndAccount } from "../../../ModularDialog/Web3AppWebview/AssetAndAccountDrawer";
 import { deriveRequestReceiveData } from "../deriveRequestReceiveData";
 import { usePayTabRequestReceive } from "../usePayTabRequestReceive";
@@ -46,6 +48,28 @@ describe("usePayTabRequestReceive", () => {
     expect(result.current.requestReceive.address).toBe("");
     expect(result.current.requestReceive.asset).toEqual({ name: "", ticker: "" });
     expect(mockedDerive).not.toHaveBeenCalled();
+  });
+
+  it("should reopen MAD on the picked asset when coming back from device onboarding", () => {
+    const { store } = renderHook(() => usePayTabRequestReceive(noop), {
+      initialRoute: "/paytab",
+      initialState: {
+        settings: AFTER_ONBOARDING_STATE,
+        onboarding: {
+          shouldResumeAddAccountAfterOnboarding: true,
+          addAccountResumeTarget: { returnTo: "/paytab", currencyId: "ethereum/erc20/usd__coin" },
+        },
+      },
+    });
+
+    expect(openAssetAndAccount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categories: [AssetCategory.Stablecoins],
+        currencies: ["ethereum/erc20/usd__coin"],
+        areCurrenciesFiltered: true,
+      }),
+    );
+    expect(shouldResumeAddAccountAfterOnboardingSelector(store.getState())).toBe(false);
   });
 
   it("should open MAD filtered to the stablecoin category", () => {

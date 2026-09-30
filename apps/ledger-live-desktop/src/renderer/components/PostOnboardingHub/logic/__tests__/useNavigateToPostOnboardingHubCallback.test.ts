@@ -165,6 +165,45 @@ describe("useNavigateToPostOnboardingHubCallback", () => {
     expect(mockNavigate).not.toHaveBeenCalledWith(RECOVER_LANDING_PATH, expect.anything());
   });
 
+  describe("when an Add Account flow waits to resume after onboarding", () => {
+    const resumeAddAccount = {
+      shouldResumeAddAccountAfterOnboarding: true,
+      addAccountResumeTarget: { returnTo: "/paytab", currencyId: "ethereum/erc20/usd__coin" },
+    };
+
+    it("should still show the recover landing but not open finish dialog", () => {
+      const { result, store } = renderNavigateHook({
+        ...featureFlagsWithRecover(),
+        postOnboarding: postOnboardingState(),
+        settings: { hasBeenRedirectedToPostOnboarding: false, hasBeenUpsoldRecover: false },
+        onboarding: resumeAddAccount,
+      });
+
+      act(() => {
+        result.current();
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith(RECOVER_LANDING_PATH, { replace: true });
+      expect(store.getState().dialogs.FINISH_POST_ONBOARDING).not.toBe(true);
+    });
+
+    it("should go back where the flow started instead of opening finish dialog", () => {
+      const { result, store } = renderNavigateHook({
+        ...featureFlagsWithRecover(),
+        postOnboarding: postOnboardingState(),
+        settings: { hasBeenRedirectedToPostOnboarding: false, hasBeenUpsoldRecover: true },
+        onboarding: resumeAddAccount,
+      });
+
+      act(() => {
+        result.current();
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith("/paytab", { replace: true });
+      expect(store.getState().dialogs.FINISH_POST_ONBOARDING).not.toBe(true);
+    });
+  });
+
   it("should navigate to post-onboarding hub when finish widget is disabled", () => {
     const { result, store } = renderNavigateHook({
       ...withFlagOverrides({

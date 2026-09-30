@@ -16,6 +16,7 @@ const resumeOnboardingState = {
   isOnboardingReceiveSuccess: false,
   isSkipDrawerOpen: false,
   shouldResumeAddAccountAfterOnboarding: true,
+  addAccountResumeTarget: { returnTo: "/", currencyId: "ethereum/erc20/usd__coin" },
 };
 
 describe("useResumeAddAccountAfterOnboarding", () => {
@@ -23,7 +24,7 @@ describe("useResumeAddAccountAfterOnboarding", () => {
     mockOpenAssetFlow.mockClear();
   });
 
-  it("resumes the Add Account flow once a device is onboarded and clears the intent", () => {
+  it("resumes the Add Account flow on its asset once a device is onboarded and clears the intent", () => {
     const { store } = renderHook(() => useResumeAddAccountAfterOnboarding(), {
       initialState: {
         settings: AFTER_ONBOARDING_STATE,
@@ -31,8 +32,21 @@ describe("useResumeAddAccountAfterOnboarding", () => {
       },
     });
 
-    expect(mockOpenAssetFlow).toHaveBeenCalledTimes(1);
+    expect(mockOpenAssetFlow).toHaveBeenCalledWith(undefined, ["ethereum/erc20/usd__coin"]);
     expect(shouldResumeAddAccountAfterOnboardingSelector(store.getState())).toBe(false);
+  });
+
+  it("keeps the resume intent while the user is not on the screen the flow started from", () => {
+    const { store } = renderHook(() => useResumeAddAccountAfterOnboarding(), {
+      initialRoute: "/accounts",
+      initialState: {
+        settings: AFTER_ONBOARDING_STATE,
+        onboarding: resumeOnboardingState,
+      },
+    });
+
+    expect(mockOpenAssetFlow).not.toHaveBeenCalled();
+    expect(shouldResumeAddAccountAfterOnboardingSelector(store.getState())).toBe(true);
   });
 
   it("keeps the resume intent and does not open Add Account while no device is onboarded", () => {

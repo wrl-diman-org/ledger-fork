@@ -24,6 +24,7 @@ const getInitialState = (isOnboardingReceiveSuccess: boolean = false): Partial<S
     onboardingSyncFlow: null,
     isSkipDrawerOpen: false,
     shouldResumeAddAccountAfterOnboarding: false,
+    addAccountResumeTarget: null,
   },
 });
 

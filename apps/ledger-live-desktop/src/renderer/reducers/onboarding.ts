@@ -10,7 +10,11 @@ export interface OnboardingState {
   isOnboardingReceiveSuccess: boolean;
   isSkipDrawerOpen: boolean;
   shouldResumeAddAccountAfterOnboarding: boolean;
+  addAccountResumeTarget: AddAccountResumeTarget | null;
 }
+
+/** Where the last Add Account flow started and its asset, to resume it there after onboarding. */
+export type AddAccountResumeTarget = { returnTo: string; currencyId: string };
 
 /*
  * We have separate states for checking if is onboarding flow
@@ -22,6 +26,7 @@ const initialState: OnboardingState = {
   isOnboardingReceiveSuccess: false,
   isSkipDrawerOpen: false,
   shouldResumeAddAccountAfterOnboarding: false,
+  addAccountResumeTarget: null,
 };
 
 const onboardingSlice = createSlice({
@@ -44,6 +49,9 @@ const onboardingSlice = createSlice({
     setShouldResumeAddAccountAfterOnboarding: (state, action: PayloadAction<boolean>) => {
       state.shouldResumeAddAccountAfterOnboarding = action.payload;
     },
+    setAddAccountResumeTarget: (state, action: PayloadAction<AddAccountResumeTarget>) => {
+      state.addAccountResumeTarget = action.payload;
+    },
   },
 });
 
@@ -59,12 +67,18 @@ export const onboardingReceiveSuccessSelector = (state: State) =>
   state.onboarding.isOnboardingReceiveSuccess;
 export const shouldResumeAddAccountAfterOnboardingSelector = (state: State) =>
   state.onboarding.shouldResumeAddAccountAfterOnboarding;
+/** The Add Account flow waiting to resume after device onboarding, if any. */
+export const pendingAddAccountResumeSelector = (state: State) =>
+  state.onboarding.shouldResumeAddAccountAfterOnboarding
+    ? state.onboarding.addAccountResumeTarget
+    : null;
 
 export const {
   setIsOnboardingReceiveFlow,
   setOnboardingSyncFlow,
   setSkipDrawerVisibility,
   setShouldResumeAddAccountAfterOnboarding,
+  setAddAccountResumeTarget,
 } = onboardingSlice.actions;
 
 export default onboardingSlice.reducer;
