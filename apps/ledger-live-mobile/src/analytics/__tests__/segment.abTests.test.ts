@@ -46,22 +46,18 @@ describe("segment ab_tests", () => {
     jest.useFakeTimers();
   });
 
-  const trackAndExpect = async (abTests: unknown) => {
+  const trackTestEvent = async () => {
     await segment.start(store);
     mockTrack.mockClear();
 
     segment.track("TestEvent", {});
 
-    await waitFor(() =>
-      expect(mockTrack).toHaveBeenCalledWith(
-        "TestEvent",
-        expect.objectContaining({ ab_tests: abTests }),
-      ),
-    );
+    await waitFor(() => expect(mockTrack).toHaveBeenCalledWith("TestEvent", expect.anything()));
+    return mockTrack.mock.calls.at(-1)[1];
   };
 
   it("sends an empty ab_tests when no experiment is served", async () => {
-    await trackAndExpect({});
+    expect(await trackTestEvent()).toEqual(expect.objectContaining({ ab_tests: {} }));
   });
 
   it("sends the full payload of each valid experiment", async () => {
@@ -75,13 +71,17 @@ describe("segment ab_tests", () => {
       ),
     });
 
-    await trackAndExpect({
-      upgradeBanner: {
-        enabled: true,
-        copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-        trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
-      },
-    });
+    expect(await trackTestEvent()).toEqual(
+      expect.objectContaining({
+        ab_tests: {
+          upgradeBanner: {
+            enabled: true,
+            copy: { "upgrade.banner.title": "Discover Ledger Flex" },
+            trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+          },
+        },
+      }),
+    );
   });
 
   it("leaves a malformed experiment out without dropping the event", async () => {
@@ -92,8 +92,10 @@ describe("segment ab_tests", () => {
       ),
     });
 
-    await trackAndExpect({
-      disabled: { enabled: false, copy: { "upgrade.banner.title": "Hidden" } },
-    });
+    expect(await trackTestEvent()).toEqual(
+      expect.objectContaining({
+        ab_tests: { disabled: { enabled: false, copy: { "upgrade.banner.title": "Hidden" } } },
+      }),
+    );
   });
 });
