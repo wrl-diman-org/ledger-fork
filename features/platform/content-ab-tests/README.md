@@ -15,3 +15,16 @@ It does not decide whether a feature flag is on. That stays in `@features/platfo
 | `getContentAbTestCopy()` / `subscribeToContentAbTestCopy` | The English copy currently applied: the `copy` of enabled experiments. |
 | `getContentAbTests()` | Every valid experiment, enabled or not, keyed by in-app id (`feature_copy_upgrade_banner` becomes `upgradeBanner`), with its full payload. Apps send it as the `ab_tests` analytics attribute. |
 | `installContentAbTestCopyOverrides` | Applies the stored copy to an i18n instance. English only; keys missing from the English baseline are skipped. |
+
+## When a new value takes effect
+
+Experiments update during the session, not on the next launch. At boot the apps hydrate the store from the config Firebase kept on disk, then from each Remote Config poll (every 5 minutes). This keeps a kill switch: a bad copy can be turned off without waiting for users to restart the app.
+
+Copy and `ab_tests` can briefly disagree after a poll changes an experiment:
+
+- `ab_tests` is read on every analytics event, so events sent after the poll carry the new payload.
+- The copy is written to i18n silently, so a screen that is already mounted keeps the old text until it re-renders. A new mount shows the new copy.
+
+This only happens while an experiment is started, stopped or edited, and only for users with the affected screen on display at that moment. Exclude those transition windows when analysing results.
+
+If that gap ever matters, re-render on copy changes instead of freezing experiments per session: subscribe to `subscribeToContentAbTestCopy` and emit an event react-i18next listens to. Check what else listens to that event in each app first.
