@@ -1,20 +1,20 @@
 import type { RemoteConfigValue } from "@features/platform-feature-flags/firebase";
 import {
   enabledContentAbTestCopy,
+  enabledContentAbTestTracking,
   parseContentAbTests,
   type ContentAbTestCopy,
-  type ContentAbTests,
+  type ContentAbTestTracking,
 } from "./internals/parse";
 
-export type { ContentAbTestCopy, ContentAbTestPayload, ContentAbTests } from "./internals/parse";
+export type { ContentAbTestCopy, ContentAbTestTracking } from "./internals/parse";
 
 type Subscriber = (copy: ContentAbTestCopy) => void;
 
 const EMPTY_COPY: ContentAbTestCopy = Object.freeze({});
-const EMPTY_EXPERIMENTS: ContentAbTests = Object.freeze({});
 const ENGLISH_LANGUAGE = "en";
 
-let experiments: ContentAbTests = EMPTY_EXPERIMENTS;
+let tracking: ContentAbTestTracking | undefined;
 let copy: ContentAbTestCopy = EMPTY_COPY;
 const subscribers = new Set<Subscriber>();
 
@@ -35,9 +35,12 @@ export function getContentAbTestCopy(): ContentAbTestCopy {
   return copy;
 }
 
-/** Every valid experiment, enabled or not, with its full payload. Sent as `ab_tests`. */
-export function getContentAbTests(): ContentAbTests {
-  return experiments;
+/**
+ * The `trackingConfiguration` of each enabled experiment, sent as `ab_tests`. `undefined` when no
+ * enabled experiment has tracking pairs, so events carry no empty attribute.
+ */
+export function getContentAbTestTracking(): ContentAbTestTracking | undefined {
+  return tracking;
 }
 
 export function subscribeToContentAbTestCopy(callback: Subscriber): () => void {
@@ -52,11 +55,13 @@ export function subscribeToContentAbTestCopy(callback: Subscriber): () => void {
  * with the `getAll()` result the flag fetch already produced, so copy costs no extra network
  * round-trip and cannot delay boot on its own.
  *
- * Applied copy is the `copy` of enabled experiments. A disabled experiment stays in
- * `getContentAbTests` but leaves the English baseline in place; a malformed one is dropped from both.
+ * Only enabled experiments apply copy and reach `getContentAbTestTracking`. A malformed payload,
+ * including a non-string tracking value, is dropped entirely.
  */
 export function setContentAbTestCopy(all: Record<string, RemoteConfigValue>): ContentAbTestCopy {
-  experiments = parseContentAbTests(all);
+  const experiments = parseContentAbTests(all);
+  const nextTracking = enabledContentAbTestTracking(experiments);
+  tracking = Object.keys(nextTracking).length > 0 ? nextTracking : undefined;
   const next = enabledContentAbTestCopy(experiments);
   if (isSameCopy(copy, next)) return copy;
   copy = next;

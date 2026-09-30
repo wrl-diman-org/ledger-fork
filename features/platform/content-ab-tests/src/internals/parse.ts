@@ -7,6 +7,7 @@ const FIREBASE_COPY_PREFIX = "feature_copy_";
 export type ContentAbTestCopy = Readonly<Record<string, string>>;
 export type ContentAbTestPayload = z.infer<typeof ContentAbTestPayloadSchema>;
 export type ContentAbTests = Readonly<Record<string, ContentAbTestPayload>>;
+export type ContentAbTestTracking = Readonly<Record<string, Readonly<Record<string, string>>>>;
 
 /**
  * Reads valid `feature_copy_*` experiments from a Remote Config `getAll()` payload, keyed by
@@ -42,6 +43,21 @@ export function enabledContentAbTestCopy(experiments: ContentAbTests): ContentAb
     if (experiment.enabled) Object.assign(merged, experiment.copy);
   }
   return Object.freeze(merged);
+}
+
+/**
+ * The `trackingConfiguration` of each enabled experiment, keyed by in-app id. Disabled
+ * experiments and experiments without tracking pairs are left out.
+ */
+export function enabledContentAbTestTracking(experiments: ContentAbTests): ContentAbTestTracking {
+  const tracking: Record<string, Readonly<Record<string, string>>> = {};
+  for (const [id, experiment] of Object.entries(experiments)) {
+    const pairs = experiment.trackingConfiguration;
+    if (experiment.enabled && pairs && Object.keys(pairs).length > 0) {
+      tracking[id] = Object.freeze({ ...pairs });
+    }
+  }
+  return Object.freeze(tracking);
 }
 
 function firebaseKeyToContentAbTestId(key: string): string | null {

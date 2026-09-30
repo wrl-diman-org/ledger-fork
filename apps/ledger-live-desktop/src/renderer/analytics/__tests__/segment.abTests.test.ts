@@ -65,48 +65,47 @@ const sendIdentifyTrackAndPage = async () => {
 const withAbTests = (abTests: unknown) =>
   Array.from({ length: 3 }, () => expect.objectContaining({ ab_tests: abTests }));
 
+const withoutAbTests = () =>
+  Array.from({ length: 3 }, () => expect.not.objectContaining({ ab_tests: expect.anything() }));
+
 describe("segment ab_tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setContentAbTestCopy({});
   });
 
-  it("sends an empty ab_tests when no experiment is served", async () => {
-    expect(await sendIdentifyTrackAndPage()).toEqual(withAbTests({}));
+  it("leaves ab_tests out when no experiment is served", async () => {
+    expect(await sendIdentifyTrackAndPage()).toEqual(withoutAbTests());
   });
 
-  it("sends the full payload of each valid experiment", async () => {
+  it("sends the tracking pairs of each enabled experiment", async () => {
     setContentAbTestCopy({
       feature_copy_upgrade_banner: remoteValue(
         JSON.stringify({
           enabled: true,
           copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-          trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+          trackingConfiguration: { ab_upgrade: "variant_b", cohort: "q3" },
         }),
       ),
     });
 
     expect(await sendIdentifyTrackAndPage()).toEqual(
-      withAbTests({
-        upgradeBanner: {
-          enabled: true,
-          copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-          trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
-        },
-      }),
+      withAbTests({ upgradeBanner: { ab_upgrade: "variant_b", cohort: "q3" } }),
     );
   });
 
-  it("leaves a malformed experiment out without dropping the event", async () => {
+  it("leaves ab_tests out when experiments are disabled or malformed", async () => {
     setContentAbTestCopy({
       feature_copy_broken: remoteValue("not json"),
       feature_copy_disabled: remoteValue(
-        JSON.stringify({ enabled: false, copy: { "upgrade.banner.title": "Hidden" } }),
+        JSON.stringify({
+          enabled: false,
+          copy: { "upgrade.banner.title": "Hidden" },
+          trackingConfiguration: { ab_hidden: "variant_b" },
+        }),
       ),
     });
 
-    expect(await sendIdentifyTrackAndPage()).toEqual(
-      withAbTests({ disabled: { enabled: false, copy: { "upgrade.banner.title": "Hidden" } } }),
-    );
+    expect(await sendIdentifyTrackAndPage()).toEqual(withoutAbTests());
   });
 });

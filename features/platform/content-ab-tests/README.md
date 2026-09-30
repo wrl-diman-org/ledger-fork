@@ -13,8 +13,20 @@ It does not decide whether a feature flag is on. That stays in `@features/platfo
 | --- | --- |
 | `setContentAbTestCopy(all)` | Stores experiments from one `getAll()` payload. An identical poll does not republish. |
 | `getContentAbTestCopy()` / `subscribeToContentAbTestCopy` | The English copy currently applied: the `copy` of enabled experiments. |
-| `getContentAbTests()` | Every valid experiment, enabled or not, keyed by in-app id (`feature_copy_upgrade_banner` becomes `upgradeBanner`), with its full payload. Apps send it as the `ab_tests` analytics attribute. |
+| `getContentAbTestTracking()` | The `trackingConfiguration` of each enabled experiment, keyed by in-app id (`feature_copy_upgrade_banner` becomes `upgradeBanner`). `undefined` when there is none. Apps send it as the `ab_tests` analytics attribute and omit the attribute when it is `undefined`. |
 | `installContentAbTestCopyOverrides` | Applies the stored copy to an i18n instance. English only; keys missing from the English baseline are skipped. |
+
+## Payload
+
+```json
+{
+  "enabled": true,
+  "copy": { "upgrade.banner.title": "Discover Ledger Flex" },
+  "trackingConfiguration": { "ab_upgrade": "variant_b", "cohort": "q3" }
+}
+```
+
+For `feature_copy_upgrade_banner`, events carry `ab_tests: { upgradeBanner: { ab_upgrade: "variant_b", cohort: "q3" } }`. `trackingConfiguration` is optional and takes any keys, with string values only. A non-string value makes the whole experiment invalid, so its copy is not applied either.
 
 ## When a new value takes effect
 

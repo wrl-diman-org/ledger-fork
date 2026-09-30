@@ -1,6 +1,6 @@
 import {
   getContentAbTestCopy,
-  getContentAbTests,
+  getContentAbTestTracking,
   setContentAbTestCopy,
   subscribeToContentAbTestCopy,
 } from "./store";
@@ -64,65 +64,62 @@ describe("setContentAbTestCopy", () => {
     });
 
     expect(setContentAbTestCopy({})).toEqual({});
-    expect(getContentAbTests()).toEqual({});
+    expect(getContentAbTestTracking()).toBeUndefined();
   });
 });
 
-describe("getContentAbTests", () => {
-  it("is empty when no experiment is served", () => {
-    expect(getContentAbTests()).toEqual({});
+describe("getContentAbTestTracking", () => {
+  it("is undefined when no experiment is served", () => {
+    expect(getContentAbTestTracking()).toBeUndefined();
   });
 
-  it("keeps the full payload, including an optional trackingConfiguration", () => {
+  it("returns the tracking pairs of enabled experiments, keyed by id", () => {
     setContentAbTestCopy({
       feature_copy_upgrade_banner: experiment({
         enabled: true,
         copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-        trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+        trackingConfiguration: { ab_upgrade: "variant_b", cohort: "q3" },
       }),
-    });
-
-    expect(getContentAbTests()).toEqual({
-      upgradeBanner: {
+      feature_copy_swap_cta: experiment({
         enabled: true,
-        copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-        trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
-      },
-    });
-    expect(getContentAbTestCopy()).toEqual({
-      "upgrade.banner.title": "Discover Ledger Flex",
-    });
-  });
-
-  it("includes a valid disabled experiment without overriding copy", () => {
-    setContentAbTestCopy({
-      feature_copy_upgrade_banner: experiment({
-        enabled: false,
-        copy: { "upgrade.banner.title": "Hidden" },
+        copy: { "swap.cta": "Swap now" },
+        trackingConfiguration: { cohort: "control" },
       }),
     });
 
-    expect(getContentAbTests()).toEqual({
-      upgradeBanner: {
-        enabled: false,
-        copy: { "upgrade.banner.title": "Hidden" },
-      },
+    expect(getContentAbTestTracking()).toEqual({
+      upgradeBanner: { ab_upgrade: "variant_b", cohort: "q3" },
+      swapCta: { cohort: "control" },
     });
-    expect(getContentAbTestCopy()).toEqual({});
   });
 
-  it("excludes malformed payloads and a broken trackingConfiguration", () => {
+  it("is undefined when only disabled or untracked experiments are served", () => {
     setContentAbTestCopy({
-      feature_copy_broken: value("not json"),
-      feature_copy_invalid: experiment({ enabled: "yes", "invalid.key": "Nope" }),
+      feature_copy_hidden: experiment({
+        enabled: false,
+        copy: { "upgrade.banner.title": "Hidden" },
+        trackingConfiguration: { ab_hidden: "variant_b" },
+      }),
+      feature_copy_untracked: experiment({
+        enabled: true,
+        copy: { "upgrade.banner.title": "Untracked" },
+      }),
+    });
+
+    expect(getContentAbTestTracking()).toBeUndefined();
+    expect(getContentAbTestCopy()).toEqual({ "upgrade.banner.title": "Untracked" });
+  });
+
+  it("drops an experiment whose tracking values are not strings, copy included", () => {
+    setContentAbTestCopy({
       feature_copy_bad_tracking: experiment({
         enabled: true,
         copy: { "upgrade.banner.title": "Should stay out" },
-        trackingConfiguration: {},
+        trackingConfiguration: { variant: 2 },
       }),
     });
 
-    expect(getContentAbTests()).toEqual({});
+    expect(getContentAbTestTracking()).toBeUndefined();
     expect(getContentAbTestCopy()).toEqual({});
   });
 });

@@ -56,46 +56,40 @@ describe("segment ab_tests", () => {
     return mockTrack.mock.calls.at(-1)[1];
   };
 
-  it("sends an empty ab_tests when no experiment is served", async () => {
-    expect(await trackTestEvent()).toEqual(expect.objectContaining({ ab_tests: {} }));
+  it("leaves ab_tests out when no experiment is served", async () => {
+    expect(await trackTestEvent()).not.toHaveProperty("ab_tests");
   });
 
-  it("sends the full payload of each valid experiment", async () => {
+  it("sends the tracking pairs of each enabled experiment", async () => {
     setContentAbTestCopy({
       feature_copy_upgrade_banner: remoteValue(
         JSON.stringify({
           enabled: true,
           copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-          trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+          trackingConfiguration: { ab_upgrade: "variant_b", cohort: "q3" },
         }),
       ),
     });
 
     expect(await trackTestEvent()).toEqual(
       expect.objectContaining({
-        ab_tests: {
-          upgradeBanner: {
-            enabled: true,
-            copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-            trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
-          },
-        },
+        ab_tests: { upgradeBanner: { ab_upgrade: "variant_b", cohort: "q3" } },
       }),
     );
   });
 
-  it("leaves a malformed experiment out without dropping the event", async () => {
+  it("leaves ab_tests out when experiments are disabled or malformed", async () => {
     setContentAbTestCopy({
       feature_copy_broken: remoteValue("not json"),
       feature_copy_disabled: remoteValue(
-        JSON.stringify({ enabled: false, copy: { "upgrade.banner.title": "Hidden" } }),
+        JSON.stringify({
+          enabled: false,
+          copy: { "upgrade.banner.title": "Hidden" },
+          trackingConfiguration: { ab_hidden: "variant_b" },
+        }),
       ),
     });
 
-    expect(await trackTestEvent()).toEqual(
-      expect.objectContaining({
-        ab_tests: { disabled: { enabled: false, copy: { "upgrade.banner.title": "Hidden" } } },
-      }),
-    );
+    expect(await trackTestEvent()).not.toHaveProperty("ab_tests");
   });
 });

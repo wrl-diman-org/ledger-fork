@@ -1,4 +1,8 @@
-import { enabledContentAbTestCopy, parseContentAbTests } from "./parse";
+import {
+  enabledContentAbTestCopy,
+  enabledContentAbTestTracking,
+  parseContentAbTests,
+} from "./parse";
 
 const value = (raw: string, source: "remote" | "default" | "static" = "remote") => ({
   asString: () => raw,
@@ -8,20 +12,20 @@ const experiment = (payload: object, source: "remote" | "default" | "static" = "
   value(JSON.stringify(payload), source);
 
 describe("parseContentAbTests", () => {
-  it("keys experiments by in-app id and keeps the full payload", () => {
+  it("keys experiments by in-app id and keeps any tracking pairs", () => {
     expect(
       parseContentAbTests({
         feature_copy_upgrade_banner: experiment({
           enabled: true,
           copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-          trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+          trackingConfiguration: { ab_upgrade: "variant_b", cohort: "q3" },
         }),
       }),
     ).toEqual({
       upgradeBanner: {
         enabled: true,
         copy: { "upgrade.banner.title": "Discover Ledger Flex" },
-        trackingConfiguration: { ptxEventProperty: "ab_upgrade", ptxEventValue: "variant_b" },
+        trackingConfiguration: { ab_upgrade: "variant_b", cohort: "q3" },
       },
     });
   });
@@ -69,7 +73,7 @@ describe("parseContentAbTests", () => {
     ).toEqual({});
   });
 
-  it("skips malformed payloads and a broken trackingConfiguration", () => {
+  it("skips malformed payloads and a non-string tracking value", () => {
     expect(
       parseContentAbTests({
         feature_copy_broken: value("not json"),
@@ -82,7 +86,7 @@ describe("parseContentAbTests", () => {
         feature_copy_bad_tracking: experiment({
           enabled: true,
           copy: { "tracking.key": "Nope" },
-          trackingConfiguration: { ptxEventProperty: "", ptxEventValue: "variant_b" },
+          trackingConfiguration: { variant: 2 },
         }),
       }),
     ).toEqual({});
@@ -106,5 +110,37 @@ describe("enabledContentAbTestCopy", () => {
       "upgrade.banner.title": "Discover bigger screen devices",
       "upgrade.banner.description": "Click to see more",
     });
+  });
+});
+
+describe("enabledContentAbTestTracking", () => {
+  it("keeps the tracking pairs of enabled experiments, keyed by id", () => {
+    expect(
+      enabledContentAbTestTracking({
+        upgradeBanner: {
+          enabled: true,
+          copy: {},
+          trackingConfiguration: { ab_upgrade: "variant_b", cohort: "q3" },
+        },
+        swapCta: { enabled: true, copy: {}, trackingConfiguration: { cohort: "control" } },
+      }),
+    ).toEqual({
+      upgradeBanner: { ab_upgrade: "variant_b", cohort: "q3" },
+      swapCta: { cohort: "control" },
+    });
+  });
+
+  it("leaves out disabled experiments and experiments without tracking pairs", () => {
+    expect(
+      enabledContentAbTestTracking({
+        hiddenBanner: {
+          enabled: false,
+          copy: {},
+          trackingConfiguration: { ab_hidden: "variant_b" },
+        },
+        untracked: { enabled: true, copy: {} },
+        emptyTracking: { enabled: true, copy: {}, trackingConfiguration: {} },
+      }),
+    ).toEqual({});
   });
 });

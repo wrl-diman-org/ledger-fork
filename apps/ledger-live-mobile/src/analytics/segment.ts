@@ -38,7 +38,7 @@ import { getAndroidArchitecture, getAndroidVersionCode } from "../logic/cleanBui
 import { userIdSelector, isDummyUserId } from "@domain/entity-client-identity";
 import { selectContacts } from "@domain/entity-contact";
 import { buildContactsGlobalProperties } from "@features/platform-contacts";
-import { getContentAbTests } from "@features/platform-content-ab-tests";
+import { getContentAbTestTracking } from "@features/platform-content-ab-tests";
 import { getAppLockAttributes } from "./getAppLockAttributes";
 import { getPayAttributes } from "./getPayAttributes";
 import {
@@ -258,6 +258,7 @@ const getMandatoryProperties = (store: AppStore) => {
   const analyticsInfo = analyticsConsentInfoSelector(state);
   const analyticsConsentOnboardingAttributes = getAnalyticsConsentOnboardingAttributes();
   const notificationsOptInAttributes = getNotificationsOptInAttributes();
+  const abTests = getContentAbTestTracking();
 
   return {
     ...(userIdStr ? { userId: userIdStr, braze_external_id: userIdStr } : {}),
@@ -267,7 +268,7 @@ const getMandatoryProperties = (store: AppStore) => {
     hasSeenAnalyticsOptInPrompt,
     readOnlyMode,
     analyticsInfo,
-    ab_tests: getContentAbTests(),
+    ...(abTests && { ab_tests: abTests }),
     ...analyticsConsentOnboardingAttributes,
     ...notificationsOptInAttributes,
   };
