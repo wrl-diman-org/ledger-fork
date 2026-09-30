@@ -759,8 +759,11 @@ export async function fetchAllEvents(speculosApiPort: number): Promise<string[]>
 
 export const pressUntilTextFound = withDeviceController(
   ({ getButtonsController }) =>
-    async (targetText: string, strictMatch: boolean = false): Promise<string[]> => {
-      const maxAttempts = 18;
+    async (
+      targetText: string,
+      strictMatch: boolean = false,
+      maxAttempts: number = 18,
+    ): Promise<string[]> => {
       const speculosApiPort = getEnv("SPECULOS_API_PORT");
       const buttons = getButtonsController();
       const seenScreens = new Set<string>();
@@ -1246,7 +1249,8 @@ export async function getDelegateEvents(delegatingAccount: Delegate): Promise<st
     delegatingAccount.account.currency.speculosApp,
   );
   await waitFor(delegateVerifyLabel);
-  return await pressUntilTextFound(delegateConfirmLabel);
+  // A Solana stake account creation reviews each of its three instructions, well past 18 screens.
+  return await pressUntilTextFound(delegateConfirmLabel, false, 40);
 }
 
 export const verifyAmountsAndAcceptSwap = withDeviceController(
