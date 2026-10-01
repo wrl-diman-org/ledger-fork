@@ -64,8 +64,8 @@ catalogs:
       specifier: 11.0.0
       version: 11.0.0
     '@ledgerhq/coin-tezos':
-      specifier: 13.0.0
-      version: 13.0.0
+      specifier: 13.0.1
+      version: 13.0.1
     '@ledgerhq/coin-xrp':
       specifier: 12.0.0
       version: 12.0.0
@@ -14173,7 +14173,7 @@ importers:
         version: link:../coin-modules/coin-sui
       '@ledgerhq/coin-tezos':
         specifier: 'catalog:'
-        version: 13.0.0(@ledgerhq/live-network@3.1.0(axios@1.13.5))
+        version: 13.0.1(@ledgerhq/live-network@3.1.0(axios@1.13.5))
       '@ledgerhq/coin-ton':
         specifier: workspace:^
         version: link:../coin-modules/coin-ton
@@ -23223,8 +23223,8 @@ packages:
     peerDependencies:
       '@ledgerhq/live-network': ^3.1.0
 
-  '@ledgerhq/coin-tezos@13.0.0':
-    resolution: {integrity: sha512-S8njuAJFau00QDsK1gpKH8VL6B+OH9oB8HpzD4H+aapwNazMyaMtuPu1Vaw8m0u9rps/K1/pkjOhElVjm8JOmA==}
+  '@ledgerhq/coin-tezos@13.0.1':
+    resolution: {integrity: sha512-h2A8G6fXfAdOvMKAI4xyz2z1MGtpmhNXs3JO3IEhHzeb+58BAKM59MvUdQQEqlUGyNfIy3wHnIZad8gNucy2pg==}
     peerDependencies:
       '@ledgerhq/live-network': ^3.1.0
 
@@ -23955,6 +23955,7 @@ packages:
     resolution: {integrity: sha512-KRbkSthClEwkbpt/LLJmBJhIOvOsyrp9OICisF9p3mOODjaxAuYmyOgrVreg09BT2F4hXN3JXpvt9eIZpTCRsw==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@nx/nx-linux-x64-musl@22.7.8':
     resolution: {integrity: sha512-pdPMWko1yZI5ZNI6/t2Y5rQPGgV/ah5DW+mlHo2aFKav4lnxvgisEh9e4HtOsYBfK/9PyYZ5u3M9hLSaMiJ75w==}
@@ -46094,7 +46095,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@ledgerhq/coin-tezos@13.0.0(@ledgerhq/live-network@3.1.0(axios@1.13.5))':
+  '@ledgerhq/coin-tezos@13.0.1(@ledgerhq/live-network@3.1.0(axios@1.13.5))':
     dependencies:
       '@ledgerhq/coin-module-framework': 10.0.0
       '@ledgerhq/live-network': 3.1.0(axios@1.13.5)
