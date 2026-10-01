@@ -1,4 +1,5 @@
 import type { DeviceManagementKit, TransportIdentifier } from "@ledgerhq/device-management-kit";
+import { getEnv } from "@shared/env";
 import {
   connectDeviceUseCase,
   DefaultDeviceDiscoveryService,
@@ -9,6 +10,7 @@ import {
 import type { DeviceModelId } from "@ledgerhq/types-devices";
 import type { Observable } from "rxjs";
 
+import { MockServerDeviceDiscoverySource } from "./discoveryService/sources/MockServerDeviceDiscoverySource";
 import { SpeculosDeviceDiscoverySource } from "./discoveryService/sources/SpeculosDeviceDiscoverySource";
 import { WebHidDeviceDiscoverySource } from "./discoveryService/sources/WebHidDeviceDiscoverySource";
 import { type DesktopConnectDeviceUIState, type DesktopDiscoveryError } from "./types";
@@ -30,6 +32,10 @@ export function connectDevice(input: ConnectDeviceInput): Observable<DesktopConn
   > = new Map();
   discoverySources.set(webHidSource.transportId, webHidSource);
   discoverySources.set(speculosSource.transportId, speculosSource);
+  if (getEnv("MOCK_SERVER_TRANSPORT")) {
+    const mockServerSource = new MockServerDeviceDiscoverySource(input.dmk);
+    discoverySources.set(mockServerSource.transportId, mockServerSource);
+  }
 
   return connectDeviceUseCase({
     ...input,

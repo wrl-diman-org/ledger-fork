@@ -1,8 +1,9 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Device } from "@ledgerhq/live-common/hw/actions/types";
 import { speculosIdentifier } from "@ledgerhq/device-transport-kit-speculos";
-import { webHidTransportIdentifier } from "@ledgerhq/live-dmk-desktop";
-import type { DeviceModelId } from "@ledgerhq/types-devices";
+import { mockserverIdentifier, webHidTransportIdentifier } from "@ledgerhq/live-dmk-desktop";
+import { getEnv } from "@shared/env";
+import { DeviceModelId } from "@ledgerhq/types-devices";
 import type { DeviceModelInfo } from "@ledgerhq/types-live";
 import type { KnownDevice } from "@ledgerhq/live-dmk-shared";
 import { getSpeculosModel } from "./devices";
@@ -50,6 +51,50 @@ function mapToWebHidKnownDevice(
   };
 }
 
+function mockServerDeviceType(): string | undefined {
+  const session: unknown = getEnv("MOCK_SERVER_SESSION");
+  if (typeof session !== "object" || session === null || !("devices" in session)) return undefined;
+
+  const { devices } = session;
+  if (!Array.isArray(devices)) return undefined;
+
+  const first: unknown = devices[0];
+  if (typeof first !== "object" || first === null || !("device_type" in first)) return undefined;
+  return typeof first.device_type === "string" ? first.device_type : undefined;
+}
+
+function mockServerDeviceModelId(): DeviceModelId {
+  switch (mockServerDeviceType()) {
+    case "nanoS":
+      return DeviceModelId.nanoS;
+    case "nanoX":
+      return DeviceModelId.nanoX;
+    case "nanoSP":
+      return DeviceModelId.nanoSP;
+    case "flex":
+    case "europa":
+      return DeviceModelId.europa;
+    case "apex":
+    case "apexp":
+    case "nanoGen5":
+      return DeviceModelId.apex;
+    case "stax":
+    default:
+      return DeviceModelId.stax;
+  }
+}
+
+function mapMockServerKnownDevice(): KnownDevice | null {
+  if (!getEnv("MOCK_SERVER_TRANSPORT")) return null;
+
+  return {
+    transport: mockserverIdentifier,
+    deviceModelId: mockServerDeviceModelId(),
+    id: "",
+    name: null,
+  };
+}
+
 function mapSpeculosKnownDevice(): KnownDevice | null {
   if (!process.env.SPECULOS_API_PORT) return null;
 
@@ -62,18 +107,26 @@ function mapSpeculosKnownDevice(): KnownDevice | null {
 }
 
 function mapConnectedDevice(deviceModelId: DeviceModelId, name: string | null = null): KnownDevice {
-  return mapSpeculosKnownDevice() ?? mapToWebHidKnownDevice(deviceModelId, name);
+  return (
+    mapMockServerKnownDevice() ??
+    mapSpeculosKnownDevice() ??
+    mapToWebHidKnownDevice(deviceModelId, name)
+  );
+}
+
+function mapTransportKnownDevice(): KnownDevice | null {
+  return mapMockServerKnownDevice() ?? mapSpeculosKnownDevice();
 }
 
 export function mapLastSeenDeviceToKnownDevice(
   device: DeviceModelInfo | null | undefined,
 ): KnownDevice | null {
-  if (!device) return mapSpeculosKnownDevice();
+  if (!device) return mapTransportKnownDevice();
   return mapConnectedDevice(device.modelId);
 }
 
 export function mapDeviceToKnownDevice(device: Device | null | undefined): KnownDevice | null {
-  if (!device) return mapSpeculosKnownDevice();
+  if (!device) return mapTransportKnownDevice();
   return mapConnectedDevice(device.modelId, device.deviceName ?? null);
 }
 
@@ -135,9 +188,9 @@ const knownDevicesSlice = createSlice({
         (action): action is PayloadAction<Partial<SettingsState>> =>
           action.type === "FETCH_SETTINGS",
         (state, action) => {
-          const speculosDevice = mapSpeculosKnownDevice();
-          if (speculosDevice) {
-            state.knownDevices = [speculosDevice];
+          const transportDevice = mapTransportKnownDevice();
+          if (transportDevice) {
+            state.knownDevices = [transportDevice];
             return;
           }
 

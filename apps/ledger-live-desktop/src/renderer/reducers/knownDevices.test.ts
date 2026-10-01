@@ -1,7 +1,8 @@
 import { DeviceModelId } from "@ledgerhq/devices";
+import { getEnv, setEnv } from "@shared/env";
 import type { Device } from "@ledgerhq/live-common/hw/actions/types";
 import { speculosIdentifier } from "@ledgerhq/device-transport-kit-speculos";
-import { webHidTransportIdentifier } from "@ledgerhq/live-dmk-desktop";
+import { mockserverIdentifier, webHidTransportIdentifier } from "@ledgerhq/live-dmk-desktop";
 import type { DeviceInfo, DeviceModelInfo } from "@ledgerhq/types-live";
 import reducer, {
   INITIAL_STATE,
@@ -77,6 +78,80 @@ describe("knownDevices reducer", () => {
           },
         ]);
       });
+    });
+
+    it("seeds a Nano Gen5 when the mock server reports apexp", () => {
+      const previousTransport = getEnv("MOCK_SERVER_TRANSPORT");
+      const previousSession = getEnv("MOCK_SERVER_SESSION");
+      setEnv("MOCK_SERVER_TRANSPORT", true);
+      setEnv("MOCK_SERVER_SESSION", {
+        devices: [
+          {
+            name: "Ledger Nano Gen5",
+            device_type: "apexp",
+            connectivity_type: "USB",
+            firmware_version: "1.2.0",
+            apps: [{ name: "BOLOS", version: "1.4.0" }],
+          },
+        ],
+      });
+
+      try {
+        const state = reducer(
+          INITIAL_STATE,
+          fetchSettings({ lastSeenDevice: null, lastOnboardedDevice: null }),
+        );
+        expect(state.knownDevices).toEqual([
+          {
+            transport: mockserverIdentifier,
+            deviceModelId: DeviceModelId.apex,
+            id: "",
+            name: null,
+          },
+        ]);
+      } finally {
+        setEnv("MOCK_SERVER_TRANSPORT", previousTransport);
+        setEnv("MOCK_SERVER_SESSION", previousSession);
+      }
+    });
+
+    it("seeds a mock server device from the session model when that transport is enabled", () => {
+      const previousTransport = getEnv("MOCK_SERVER_TRANSPORT");
+      const previousSession = getEnv("MOCK_SERVER_SESSION");
+      const previousDevice = process.env.SPECULOS_DEVICE;
+      setEnv("MOCK_SERVER_TRANSPORT", true);
+      setEnv("MOCK_SERVER_SESSION", {
+        devices: [
+          {
+            name: "Ledger Nano X",
+            device_type: "nanoX",
+            connectivity_type: "USB",
+            firmware_version: "1.9.1",
+            apps: [{ name: "BOLOS", version: "1.4.0" }],
+          },
+        ],
+      });
+      process.env.SPECULOS_DEVICE = "stax";
+
+      try {
+        const state = reducer(
+          INITIAL_STATE,
+          fetchSettings({ lastSeenDevice: null, lastOnboardedDevice: null }),
+        );
+        expect(state.knownDevices).toEqual([
+          {
+            transport: mockserverIdentifier,
+            deviceModelId: DeviceModelId.nanoX,
+            id: "",
+            name: null,
+          },
+        ]);
+      } finally {
+        setEnv("MOCK_SERVER_TRANSPORT", previousTransport);
+        setEnv("MOCK_SERVER_SESSION", previousSession);
+        if (previousDevice === undefined) delete process.env.SPECULOS_DEVICE;
+        else process.env.SPECULOS_DEVICE = previousDevice;
+      }
     });
 
     it("seeds from lastSeenDevice when empty", () => {
